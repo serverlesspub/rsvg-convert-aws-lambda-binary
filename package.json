@@ -1,8 +1,10 @@
 {
   "name": "rsvg-convert-aws-lambda-binary",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A statically linked rsvg-convert binary utility from the librsvg Linux package, allowing you to render SVG images to PDF and PNG on AWS Lambda using Cairo.",
-  "files": ["vendor"],
+  "files": [
+    "vendor"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/claudiajs/rsvg-convert-aws-lambda-binary.git"
