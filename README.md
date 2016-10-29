@@ -16,6 +16,10 @@ These are all a bit old, but are compatible with the other libraries available t
 
 Grab the binary from the [vendor](/vendor) directory
 
+## Usage from Node.js
+
+Check out the [SVG to PDF Example Project](https://github.com/claudiajs/example-projects/tree/master/svg-to-pdf-s3-converter).
+
 ## Creating a fresh compilation
 
 1. Create an AMI
