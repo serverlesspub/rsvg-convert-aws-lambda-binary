@@ -2,6 +2,19 @@
 
 A statically linked `rsvg-convert` binary utility from the [`librsvg`](http://live.gnome.org/LibRsvg) Linux package, allowing you to render SVG images to PDF and PNG on AWS Lambda using [Cairo](https://cairographics.org).
 
+## Why?
+
+The standard AWS Lambda Linux VM comes with imagemagick, but compiled without SVG support. In order to process SVG images, you either need to add SVG support to ImageMagick or use a custom tool. RSVG+Cairo is the best back-end for SVG processing in imagemagick anyway, so this binary gives you direct access to that toolkit.
+
+## Download the binary
+
+Grab the binary from the [vendor](/vendor) directory
+
+## Usage from Node.js
+
+Check out the [SVG to PDF Example Project](https://github.com/claudiajs/example-projects/tree/master/svg-to-pdf-s3-converter).
+
+## Versions
 Compiled with AMI ami-60b6c60a, 29 October 2016, with the following library versions:
 
 * `cairo`: 1.12.14
@@ -11,14 +24,6 @@ Compiled with AMI ami-60b6c60a, 29 October 2016, with the following library vers
 * `librsvg`: 2.26.3
 
 These are all a bit old, but are compatible with the other libraries available through YUM for the Amazon Linux instance. To get a more recent version built, modify `compile-static.sh` to include the appropriate versions of dependencies.
-
-## Download the binary
-
-Grab the binary from the [vendor](/vendor) directory
-
-## Usage from Node.js
-
-Check out the [SVG to PDF Example Project](https://github.com/claudiajs/example-projects/tree/master/svg-to-pdf-s3-converter).
 
 ## Creating a fresh compilation
 
