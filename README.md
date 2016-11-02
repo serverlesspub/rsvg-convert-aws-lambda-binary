@@ -10,6 +10,29 @@ The standard AWS Lambda Linux VM comes with imagemagick, but compiled without SV
 
 Grab the binary from the [vendor](/vendor) directory
 
+```
+Usage:
+  rsvg-convert [OPTION…] [FILE...] - SVG Converter
+
+Help Options:
+  -?, --help                                                  Show help options
+
+Application Options:
+  -d, --dpi-x=<float>                                         pixels per inch [optional; defaults to 90dpi]
+  -p, --dpi-y=<float>                                         pixels per inch [optional; defaults to 90dpi]
+  -x, --x-zoom=<float>                                        x zoom factor [optional; defaults to 1.0]
+  -y, --y-zoom=<float>                                        y zoom factor [optional; defaults to 1.0]
+  -z, --zoom=<float>                                          zoom factor [optional; defaults to 1.0]
+  -w, --width=<int>                                           width [optional; defaults to the SVG's width]
+  -h, --height=<int>                                          height [optional; defaults to the SVG's height]
+  -f, --format=[png, pdf, ps, svg]                            save format [optional; defaults to 'png']
+  -o, --output                                                output filename [optional; defaults to stdout]
+  -a, --keep-aspect-ratio                                     whether to preserve the aspect ratio [optional; defaults to FALSE]
+  -b, --background-color=[black, white, #abccee, #aaa...]     set the background color [optional; defaults to None]
+  -v, --version                                               show version information
+  --base-uri                                                  base uri
+```
+
 ## Usage from Node.js
 
 Check out the [SVG to PDF Example Project](https://github.com/claudiajs/example-projects/tree/master/svg-to-pdf-s3-converter).
