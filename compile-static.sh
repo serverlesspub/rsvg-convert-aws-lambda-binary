@@ -3,6 +3,8 @@ sudo yum install shared-mime-info cairo cairo-devel cairo-gobject-devel gobject-
 export PKG_CONFIG_PATH=/home/ec2-user/build/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig
 rm -rf build *.pdf
 
+mkdir build
+
 curl -OL http://ftp.gnome.org/pub/GNOME/sources/libcroco/0.6/libcroco-0.6.8.tar.xz
 tar xf libcroco-0.6.8.tar.xz 
 cd libcroco-0.6.8
@@ -31,6 +33,6 @@ cd librsvg-2.26.3
 make && make install 
 cd ..
 
-./build/bin/rsvg-convert map.svg -o map-x.pdf -f pdf
-ls -la *.pdf
+#./build/bin/rsvg-convert map.svg -o map-x.pdf -f pdf
+#ls -la *.pdf
 
