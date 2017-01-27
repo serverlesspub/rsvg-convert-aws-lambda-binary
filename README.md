@@ -38,7 +38,7 @@ Application Options:
 Check out the [SVG to PDF Example Project](https://github.com/claudiajs/example-projects/tree/master/svg-to-pdf-s3-converter).
 
 ## Versions
-Compiled with AMI ami-60b6c60a, 29 October 2016, with the following library versions:
+Compiled with AMI amzn-ami-hvm-2016.03.3.x86_64-gp2, 26 January 2017, with the following library versions:
 
 * `cairo`: 1.12.14
 * `pango`: 1.28.4
@@ -62,6 +62,16 @@ The binary will work on a plain-vanilla AWS Linux VM, but needs some additional 
 ```
 sudo yum install cairo libtiff -y
 ```
+
+
+## Useful notes 
+
+* [RSVG Homebrew formula](https://github.com/Homebrew/homebrew-core/blob/master/Formula/librsvg.rb)
+* [Building librsvg from scratch](http://www.linuxfromscratch.org/blfs/view/svn/general/librsvg.html)
+* Find which dynamic of libraries RSVG is linked with on your machine:
+  * OSX: `otool -L $(which rsvg-convert)`
+  * Linux: `ldd $(which rsvg-convert)`
+* print versions of libraries installed on your system: `pkg-config --modversion glib-2.0 gdk-pixbuf-2.0 cairo`
 
 ### Copyright and license
 
