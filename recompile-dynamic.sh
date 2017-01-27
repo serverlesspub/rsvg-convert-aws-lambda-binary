@@ -35,7 +35,6 @@ curl -OL https://downloads.sourceforge.net/libpng/libpng-1.6.21.tar.xz && \
   make && sudo make install && sudo ldconfig && \
   cd ..
 
-
 sudo mkdir -p $PREFIX/lib/gdk-pixbuf-2.0/2.10.0
 
 rm -rf gdk-pixbuf* && \

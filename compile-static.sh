@@ -52,7 +52,7 @@ cd ..
 curl -OL http://ftp.gnome.org/pub/GNOME/sources/librsvg/2.40/librsvg-2.40.16.tar.xz
 tar xf librsvg-2.40.16.tar.xz
 cd librsvg-2.40.16
-./configure --prefix=/home/ec2-user/build --disable-shared --enable-static --without-pango 
+./configure --prefix=/home/ec2-user/build --disable-shared --enable-static 
 make install 
 cd ..
 
