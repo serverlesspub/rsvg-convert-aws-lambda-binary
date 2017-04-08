@@ -37,6 +37,22 @@ Application Options:
 
 Check out the [SVG to PDF Example Project](https://github.com/claudiajs/example-projects/tree/master/svg-to-pdf-s3-converter).
 
+## Using custom fonts
+
+RSVG uses Pango, and Pango uses Font-Config to load fonts. To use a custom set of fonts, you'll need to provide a trivial `fonts.conf` file somewhere and point to it using the `FONTCONFIG_PATH` environment variable. For example, put the fonts into the `fonts` subdirectory of your application, then add this file to your application root dir as `fonts.conf`:
+
+```
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>./fonts/</dir>
+  <cachedir>/tmp/fonts-cache/</cachedir>
+  <config></config>
+</fontconfig>
+```
+
+Then run `FONTCONFIG_PATH=<APP-ROOT> <RSVG_DIR>/rsvg-convert input.svg -o output.svg`
+
 ## Versions
 Compiled with AMI ami-60b6c60a, 29 October 2016, with the following library versions:
 
