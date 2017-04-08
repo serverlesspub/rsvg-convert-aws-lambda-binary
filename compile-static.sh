@@ -15,7 +15,7 @@ cd ..
 curl -OL http://ftp.gnome.org/pub/GNOME/sources/pango/1.28/pango-1.28.4.tar.bz2
 tar xf pango-1.28.4.tar.bz2
 cd pango-1.28.4
-./configure --prefix=/home/ec2-user/build --disable-shared --enable-static
+./configure --prefix=/home/ec2-user/build --with-included-modules --disable-shared --enable-static
 make && make install 
 cd ..
 
