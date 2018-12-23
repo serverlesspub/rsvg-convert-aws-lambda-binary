@@ -1,2 +1,4 @@
+build
 *.pdf
 *.png
+*.svg

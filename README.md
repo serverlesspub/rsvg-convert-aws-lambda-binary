@@ -1,10 +1,18 @@
 # Static rsvg-convert binary for AWS Lambda
 
-A statically linked `rsvg-convert` binary utility from the [`librsvg`](http://live.gnome.org/LibRsvg) Linux package, allowing you to render SVG images to PDF and PNG on AWS Lambda using [Cairo](https://cairographics.org).
+
+This is a statically linked `rsvg-convert` binary utility from the [`librsvg`](http://live.gnome.org/LibRsvg) Linux package, allowing you to render SVG images to PDF and PNG on AWS Lambda using [Cairo](https://cairographics.org), deployable as an AWS lambda layer. It can help you get started quickly with RSVG inside Lambda functions.
 
 ## Why?
 
 The standard AWS Lambda Linux VM comes with imagemagick, but compiled without SVG support. In order to process SVG images, you either need to add SVG support to ImageMagick or use a custom tool. RSVG+Cairo is the best back-end for SVG processing in imagemagick anyway, so this binary gives you direct access to that toolkit.
+
+
+## Use within Lambda
+
+You can use a pre-deployed ARN: `arn:aws:lambda:us-east-1:145266761615:layer:rsvg-convert:1` or deploy yourself -- edit Makefile to set your deployment bucket etc, then just run `make deploy`.
+
+The binary will be in `/opt/bin/rsvg-convert` inside your Lambda container.
 
 ## Download the binary
 
@@ -32,10 +40,6 @@ Application Options:
   -v, --version                                               show version information
   --base-uri                                                  base uri
 ```
-
-## Usage from Node.js
-
-Check out the [SVG to PDF Example Project](https://github.com/claudiajs/example-projects/tree/master/svg-to-pdf-s3-converter).
 
 ## Using custom fonts
 
@@ -68,6 +72,7 @@ These are all a bit old, but are compatible with the other libraries available t
 
 1. Create an AMI
 2. ssh to the AMI as `ec2-user`
+3. copy the files from the `src` directory to the VM.
 3. on the VM, run `system_init.sh`
 4. on the VM, run `compile-static.sh`
 
