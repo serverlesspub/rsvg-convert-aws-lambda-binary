@@ -30,5 +30,5 @@ Resources:
       Principal: !Ref AllowedPrincipal
 
 Outputs:
-  PandocLayer: 
+  LambdaLayer: 
     Value: !Ref LambdaLayer
