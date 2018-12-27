@@ -10,7 +10,7 @@ The standard AWS Lambda Linux VM comes with imagemagick, but compiled without SV
 
 ## Use within Lambda
 
-You can use a pre-deployed ARN: `arn:aws:lambda:us-east-1:145266761615:layer:rsvg-convert:1` or deploy yourself -- edit Makefile to set your deployment bucket etc, then just run `make deploy`.
+You can use a pre-deployed ARN: `arn:aws:lambda:us-east-1:145266761615:layer:rsvg-convert:2` or deploy yourself -- edit Makefile to set your deployment bucket etc, then just run `make deploy`.
 
 The binary will be in `/opt/bin/rsvg-convert` inside your Lambda container.
 
