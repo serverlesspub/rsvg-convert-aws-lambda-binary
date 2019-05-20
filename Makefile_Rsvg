@@ -1,0 +1,227 @@
+LIBPNG_VERSION ?= 1.6.37
+LIBJPG_VERSION ?= 9c
+OPENJP2_VERSION ?= 2.3.1
+LIBTIFF_VERSION ?= 4.0.9
+BZIP2_VERSION ?= 1.0.6
+LIBWEBP_VERSION ?= 0.6.1
+IMAGEMAGICK_VERSION ?= 7.0.8-45
+
+LIBCROCO_VERSION=0.6.8
+PANGO_VERSION=1.28.4
+GDK_PIXBUF_VERSION=2.28.2
+
+TARGET_DIR ?= /opt/
+PROJECT_ROOT = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+CACHE_DIR=$(PROJECT_ROOT)build/cache
+
+.ONESHELL:
+
+CONFIGURE = PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig \
+	./configure \
+		CPPFLAGS=-I$(CACHE_DIR)/include \
+		LDFLAGS=-L$(CACHE_DIR)/lib \
+		--disable-dependency-tracking \
+		--disable-shared \
+		--enable-static \
+		--prefix=$(CACHE_DIR)
+
+##
+system-init:
+	#yum-config-manager --enable epel
+	yum install -y gcc gcc-c++ glib2-devel libxml2-devel libpng-devel \
+		libtiff-devel libjpeg-devel freetype-devel poppler-devel intltool \
+		flex bison shared-mime-info gobject-introspection gobject-introspection-devel \
+		giflib-devel libjpeg-turbo-devel poppler-glib-devel pango-devel \
+		cairo cairo-devel cairo-gobject-devel harfbuzz-devel
+
+
+## licroco
+
+LIBCROCO_SOURCE=libcroco-$(LIBCROCO_VERSION).tar.xz
+LIBCROCO_MINOR_VERSION=$(basename $(LIBCROCO_VERSION))
+
+$(LIBCROCO_SOURCE):
+	curl -OL http://ftp.gnome.org/pub/GNOME/sources/libcroco/$(LIBCROCO_MINOR_VERSION)/$(LIBCROCO_SOURCE)
+	
+$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a: $(LIBCROCO_SOURCE)
+	tar xf $<
+	cd libcroco*
+	$(CONFIGURE)	 
+	make
+	make install
+
+## pango
+
+PANGO_SOURCE=pango-$(PANGO_VERSION).tar.bz2
+PANGO_MINOR_VERSION=$(basename $(PANGO_VERSION))
+PANGO_MAJOR_VERSION=$(basename $(PANGO_MINOR_VERSION))
+
+$(PANGO_SOURCE):
+	curl -OL http://ftp.gnome.org/pub/GNOME/sources/pango/$(PANGO_MINOR_VERSION)/$(PANGO_SOURCE)
+
+
+$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a: $(PANGO_SOURCE) $(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a
+	tar xf $<
+	cd pango*
+	$(CONFIGURE) \
+		--with-included-modules	\
+		--disable-introspection \
+		--disable-gtk-doc-html
+
+	make
+	make install
+
+
+### GDK_PIXBUF
+
+GDK_PIXBUF_SOURCE=gdk-pixbuf-$(GDK_PIXBUF_VERSION).tar.xz
+GDK_PIXBUF_MINOR_VERSION=$(basename $(GDK_PIXBUF_VERSION))
+GDK_PIXBUF_MAJOR_VERSION=$(basename $(GDK_PIXBUF_MINOR_VERSION))
+
+$(GDK_PIXBUF_SOURCE):
+	curl -OL http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/$(GDK_PIXBUF_MINOR_VERSION)/$(GDK_PIXBUF_SOURCE) 
+
+$(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a: $(GDK_PIXBUF_SOURCE)
+	tar xf $<
+	cd gdk-pixbuf*
+	$(CONFIGURE) \
+		--without-gdiplus \
+		--disable-modules \
+		--disable-glibtest \
+		--disable-introspection \
+		--disable-gtk-doc-html \
+		--with-included-loaders=yes 
+	make
+	make install
+## libjpg
+
+LIBJPG_SOURCE=jpegsrc.v$(LIBJPG_VERSION).tar.gz
+
+$(LIBJPG_SOURCE):
+	curl -LO http://ijg.org/files/$(LIBJPG_SOURCE)
+
+$(CACHE_DIR)/lib/libjpeg.a: $(LIBJPG_SOURCE)
+	tar xf $<
+	cd jpeg*
+	$(CONFIGURE)	 
+	make
+	make install
+
+
+
+
+## libpng
+
+LIBPNG_SOURCE=libpng-$(LIBPNG_VERSION).tar.xz
+
+$(LIBPNG_SOURCE):
+	curl -LO http://prdownloads.sourceforge.net/libpng/$(LIBPNG_SOURCE)
+
+$(CACHE_DIR)/lib/libpng.a: $(LIBPNG_SOURCE)
+	tar xf $<
+	cd libpng*
+	$(CONFIGURE)	 
+	make
+	make install
+
+# libbz2
+
+BZIP2_SOURCE=bzip2-$(BZIP2_VERSION).tar.gz
+
+$(BZIP2_SOURCE):
+	curl -LO http://prdownloads.sourceforge.net/bzip2/bzip2-$(BZIP2_VERSION).tar.gz
+
+$(CACHE_DIR)/lib/libbz2.a: $(BZIP2_SOURCE)
+	tar xf $<
+	cd bzip2-*
+	make libbz2.a
+	make install PREFIX=$(CACHE_DIR)
+
+# libtiff
+
+LIBTIFF_SOURCE=tiff-$(LIBTIFF_VERSION).tar.gz
+
+$(LIBTIFF_SOURCE):
+	curl -LO http://download.osgeo.org/libtiff/$(LIBTIFF_SOURCE)
+
+$(CACHE_DIR)/lib/libtiff.a: $(LIBTIFF_SOURCE) $(CACHE_DIR)/lib/libjpeg.a
+	tar xf $<
+	cd tiff-*
+	$(CONFIGURE)	 
+	make
+	make install
+
+# libwebp
+
+LIBWEBP_SOURCE=libwebp-$(LIBWEBP_VERSION).tar.gz
+
+$(LIBWEBP_SOURCE):
+	curl -L https://github.com/webmproject/libwebp/archive/v$(LIBWEBP_VERSION).tar.gz -o $(LIBWEBP_SOURCE)
+	
+$(CACHE_DIR)/lib/libwebp.a: $(LIBWEBP_SOURCE)
+	tar xf $<
+	cd libwebp-*
+	sh autogen.sh
+	$(CONFIGURE)	 
+	make
+	make install
+
+## libopenjp2
+
+OPENJP2_SOURCE=openjp2-$(OPENJP2_VERSION).tar.gz
+
+$(OPENJP2_SOURCE):
+	curl -L https://github.com/uclouvain/openjpeg/archive/v$(OPENJP2_VERSION).tar.gz -o $(OPENJP2_SOURCE)
+
+
+$(CACHE_DIR)/lib/libopenjp2.a: $(OPENJP2_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libtiff.a
+	tar xf $<
+	cd openjpeg-*
+	mkdir -p build
+	cd build 
+	PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig cmake .. \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=$(CACHE_DIR) \
+		-DBUILD_SHARED_LIBS:bool=off \
+		-DBUILD_CODEC:bool=off
+	make clean
+	make install
+
+
+## ImageMagick
+
+IMAGE_MAGICK_SOURCE=ImageMagick-$(IMAGEMAGICK_VERSION).tar.gz
+
+$(IMAGE_MAGICK_SOURCE):
+	curl -L https://github.com/ImageMagick/ImageMagick/archive/$(IMAGEMAGICK_VERSION).tar.gz -o $(IMAGE_MAGICK_SOURCE)
+
+
+LIBS:=$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a \
+	$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a \
+	$(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a
+
+$(TARGET_DIR)/bin/identify: $(IMAGE_MAGICK_SOURCE) $(LIBS)
+	tar xf $<
+	cd ImageMa*
+	PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig \
+		./configure \
+		CPPFLAGS=-I$(CACHE_DIR)/include \
+		LDFLAGS=-L$(CACHE_DIR)/lib \
+		--disable-dependency-tracking \
+		--disable-shared \
+		--enable-static \
+		--prefix=$(TARGET_DIR) \
+		--enable-delegate-build \
+		--without-modules \
+		--disable-docs \
+		--without-magick-plus-plus \
+		--without-perl \
+		--without-x \
+		--disable-openmp
+	make clean
+	make all
+	make install
+
+libs: $(LIBS)
+
+all: $(TARGET_DIR)/bin/identify

@@ -1,24 +1,36 @@
-DEPLOYMENT_BUCKET_NAME := desole-packaging
-DEPLOYMENT_KEY := $(shell echo rsvg-$$RANDOM.zip)
-STACK_NAME := rsvg-lambda-layer
+PROJECT_ROOT = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-clean: 
-	rm -rf build
+DOCKER_IMAGE ?= lambci/lambda-base-2:build
+TARGET ?=/opt/
 
-build/bin/rsvg-convert: vendor/rsvg-convert
-	mkdir -p build/bin
-	cp vendor/rsvg-convert build/bin
+MOUNTS = -v $(PROJECT_ROOT):/var/task \
+	-v $(PROJECT_ROOT)result:$(TARGET)
 
-build/layer.zip: build/bin/rsvg-convert
-	cd build && zip -r layer.zip bin
+DOCKER = docker run -it --rm -w=/var/task/build
+build result: 
+	mkdir $@
 
-# cloudformation has no support for packaging layers yet, so need to do this manually
-#
-build/output.yml: build/layer.zip cloudformation/template.yml
-	aws s3 cp build/layer.zip s3://$(DEPLOYMENT_BUCKET_NAME)/$(DEPLOYMENT_KEY)
-	sed "s:DEPLOYMENT_BUCKET_NAME:$(DEPLOYMENT_BUCKET_NAME):;s:DEPLOYMENT_KEY:$(DEPLOYMENT_KEY):" cloudformation/template.yml > build/output.yml
+clean:
+	rm -rf build result
 
-deploy: build/output.yml
-	aws cloudformation deploy --template-file build/output.yml --stack-name $(STACK_NAME)
-	aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query Stacks[].Outputs[].OutputValue --output text
+bash:
+	$(DOCKER) $(MOUNTS) --entrypoint /bin/bash -t $(DOCKER_IMAGE)
 
+all libs: 
+	$(DOCKER) $(MOUNTS) --entrypoint /usr/bin/make -t $(DOCKER_IMAGE) TARGET_DIR=$(TARGET) -f ../Makefile_Rsvg $@
+
+
+STACK_NAME ?= rsvg-layer 
+
+result/bin/rsvg: all
+
+build/output.yaml: template.yaml result/bin/rsvg
+	aws cloudformation package --template $< --s3-bucket $(DEPLOYMENT_BUCKET) --output-template-file $@
+
+deploy: build/output.yaml
+	aws cloudformation deploy --template $< --stack-name $(STACK_NAME)
+	aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query Stacks[].Outputs --output table
+
+deploy-example:
+	cd example && \
+		make deploy DEPLOYMENT_BUCKET=$(DEPLOYMENT_BUCKET) RSVG_STACK_NAME=$(STACK_NAME)
