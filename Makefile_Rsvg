@@ -1,6 +1,6 @@
 LIBPNG_VERSION ?= 1.6.37
 UTIL_LINUX_VERSION=2.33
-LIBJPG_VERSION ?= 9c
+LIBJPEG_VERSION ?= 9c
 OPENJP2_VERSION ?= 2.3.1
 LIBTIFF_VERSION ?= 4.0.9
 LIBXML2_VERSION ?= 2.9.9
@@ -12,35 +12,31 @@ GDK_PIXBUF_VERSION=2.28.2
 LIBFFI_VERSION=3.2.1
 LIBRSVG_VERSION=2.26.3
 PIXMAN_VERSION=0.38.4
-POPPLER_VERSION=0.67.0
 FONTCONFIG_VERSION=2.13.0
 FREETYPE_VERSION=2.10.0
-
 BZIP2_VERSION ?= 1.0.6
 
+
+# what to tell RSVG where it will expect to run from
+
 TARGET_DIR ?= /opt/
+
 PROJECT_ROOT = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
+## this is a temporary area for libraries; we don't use the main destination 
+## because a bunch of these libraries install additional tools and things
+## that the final package does not need. in order to minimise the final
+## Lambda layer size, this build script first makes/installs static 
+## dependencies with their docs and command line tools to the cache area,
+## and then just finally installs rsvg into the actual target
+
 CACHE_DIR=$(PROJECT_ROOT)build/cache
 
-CMAKE=cmake3
 
-#??? linux-vdso.so.1 (0x00007ffe885ab000)
-#  libgthread-2.0.so.0 => /lib64/libgthread-2.0.so.0 (0x00007f990aff3000)
-#  libgmodule-2.0.so.0 => /lib64/libgmodule-2.0.so.0 (0x00007f990aa88000)
-#  libpixman-1.so.0 => /lib64/libpixman-1.so.0 (0x00007f990a5c4000)
-#  libfontconfig.so.1 => /lib64/libfontconfig.so.1 (0x00007f9909d3e000)
-#  libfreetype.so.6 => /lib64/libfreetype.so.6 (0x00007f9909a9a000)
-#  libgio-2.0.so.0 => /lib64/libgio-2.0.so.0 (0x00007f9909701000)
-#  libgobject-2.0.so.0 => /lib64/libgobject-2.0.so.0 (0x00007f99094ae000)
-#  libglib-2.0.so.0 => /lib64/libglib-2.0.so.0 (0x00007f990919b000)
-#  liblzma.so.5 => /lib64/liblzma.so.5 (0x00007f990840c000)
-#  libexpat.so.1 => /lib64/libexpat.so.1 (0x00007f99081da000)
-#  libmount.so.1 => /lib64/libmount.so.1 (0x00007f990793f000)
-#  libblkid.so.1 => /lib64/libblkid.so.1 (0x00007f99074de000)
-#  libuuid.so.1 => /lib64/libuuid.so.1 (0x00007f99072d9000)
 
 .ONESHELL:
 
+CMAKE=cmake3
 PKG_CONFIG=PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig
 CONFIGURE = $(PKG_CONFIG) ./configure \
 		CPPFLAGS=-I$(CACHE_DIR)/include \
@@ -51,18 +47,20 @@ CONFIGURE = $(PKG_CONFIG) ./configure \
 		--disable-rpath \
 		--prefix=$(CACHE_DIR)
 
-##
-system-init:
+## dev tool istallation
+
+init:
 	yum install -y gcc gcc-c++ cmake3 intltool flex bison shared-mime-info gperf
 
 ## util-linux has libmount and libuuid etc
 
-UTIL_LINUX_SOURCE=util-linux-$(UTIL_LINUX_VERSION).tar.xz
+LIBUUID=$(CACHE_DIR)/lib/libuuid.a
 
+UTIL_LINUX_SOURCE=util-linux-$(UTIL_LINUX_VERSION).tar.xz
 $(UTIL_LINUX_SOURCE):
 	curl -LO https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v$(UTIL_LINUX_VERSION)/$(UTIL_LINUX_SOURCE)
 
-$(CACHE_DIR)/lib/libuuid.a: $(UTIL_LINUX_SOURCE)
+$(LIBUUID): $(UTIL_LINUX_SOURCE)
 	tar xf $<
 	cd util-linux*
 	$(CONFIGURE) \
@@ -74,10 +72,12 @@ $(CACHE_DIR)/lib/libuuid.a: $(UTIL_LINUX_SOURCE)
 ## libffi
 
 LIBFFI_SOURCE=libffi-$(LIBFFI_VERSION).tar.gz
+LIBFFI=$(CACHE_DIR)/lib64/libffi.a
+
 $(LIBFFI_SOURCE): 
 	curl -LO ftp://sourceware.org/pub/libffi/$(LIBFFI_SOURCE)
 
-$(CACHE_DIR)/lib64/libffi.a libffi: $(LIBFFI_SOURCE)
+$(LIBFFI): $(LIBFFI_SOURCE)
 	tar xf $<
 	cd libffi*
 	$(CONFIGURE)
@@ -90,11 +90,12 @@ $(CACHE_DIR)/lib64/libffi.a libffi: $(LIBFFI_SOURCE)
 GLIB_SOURCE=glib-$(GLIB_VERSION).tar.xz
 GLIB_MINOR_VERSION=$(basename $(GLIB_VERSION))
 GLIB_MAJOR_VERSION=$(basename $(GLIB_MINOR_VERSION))
+GLIB=$(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a
 
 $(GLIB_SOURCE):
 	curl -LO http://ftp.gnome.org/pub/gnome/sources/glib/$(GLIB_MINOR_VERSION)/$(GLIB_SOURCE)
 
-glib $(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a: $(GLIB_SOURCE) $(CACHE_DIR)/lib64/libffi.a
+$(GLIB): $(GLIB_SOURCE) $(LIBFFI)
 	tar xf $<
 	cd glib*
 	$(PKG_CONFIG) ./autogen.sh 
@@ -113,11 +114,11 @@ glib $(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a: $(GLIB_SOURCE) $(CACHE_
 ## libxml2
 
 LIBXML2_SOURCE=libxml2-$(LIBXML2_VERSION).tar.gz
-
+LIBXML2=$(CACHE_DIR)/lib/libxml2.a
 $(LIBXML2_SOURCE):
 	curl -LO ftp://xmlsoft.org/libxml2/$(LIBXML2_SOURCE)
 
-$(CACHE_DIR)/lib/libxml2.a: $(LIBXML2_SOURCE)
+$(LIBXML2): $(LIBXML2_SOURCE)
 	tar xf $<
 	cd libxml2*
 	$(CONFIGURE) \
@@ -130,11 +131,12 @@ $(CACHE_DIR)/lib/libxml2.a: $(LIBXML2_SOURCE)
 
 LIBCROCO_SOURCE=libcroco-$(LIBCROCO_VERSION).tar.xz
 LIBCROCO_MINOR_VERSION=$(basename $(LIBCROCO_VERSION))
+LIBCROCO=$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a
 
 $(LIBCROCO_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/libcroco/$(LIBCROCO_MINOR_VERSION)/$(LIBCROCO_SOURCE)
-	
-$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a: $(LIBCROCO_SOURCE) $(CACHE_DIR)/lib/libxml2.a $(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a
+
+$(LIBCROCO): $(LIBCROCO_SOURCE) $(LIBXML2) $(GLIB)
 	tar xf $<
 	cd libcroco*
 	$(CONFIGURE) \
@@ -144,30 +146,118 @@ $(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a: $(LIBCROCO_SOURCE) $(CACH
 	make clean
 	make install
 
+## libjpg
+
+LIBJPEG_SOURCE=jpegsrc.v$(LIBJPEG_VERSION).tar.gz
+
+LIBJPEG=$(CACHE_DIR)/lib/libjpeg.a
+
+$(LIBJPEG_SOURCE):
+	curl -LO http://ijg.org/files/$(LIBJPEG_SOURCE)
+
+$(LIBJPEG): $(LIBJPEG_SOURCE)
+	tar xf $<
+	cd jpeg*
+	$(CONFIGURE)	 
+	make
+	make install
+
+## libpng
+
+LIBPNG_SOURCE=libpng-$(LIBPNG_VERSION).tar.xz
+LIBPNG=$(CACHE_DIR)/lib/libpng.a
+
+$(LIBPNG_SOURCE):
+	curl -LO http://prdownloads.sourceforge.net/libpng/$(LIBPNG_SOURCE)
+
+$(LIBPNG): $(LIBPNG_SOURCE)
+	tar xf $<
+	cd libpng*
+	$(CONFIGURE)	 
+	make
+	make install
+
+# libbz2
+
+BZIP2_SOURCE=bzip2-$(BZIP2_VERSION).tar.gz
+LIBBZ2=$(CACHE_DIR)/lib/libbz2.a
+
+$(BZIP2_SOURCE):
+	curl -LO http://prdownloads.sourceforge.net/bzip2/bzip2-$(BZIP2_VERSION).tar.gz
+
+$(LIBBZ2): $(BZIP2_SOURCE)
+	tar xf $<
+	cd bzip2-*
+	make libbz2.a
+	make install PREFIX=$(CACHE_DIR)
+
+# libtiff
+
+LIBTIFF_SOURCE=tiff-$(LIBTIFF_VERSION).tar.gz
+LIBTIFF=$(CACHE_DIR)/lib/libtiff.a
+
+$(LIBTIFF_SOURCE):
+	curl -LO http://download.osgeo.org/libtiff/$(LIBTIFF_SOURCE)
+
+$(LIBTIFF): $(LIBTIFF_SOURCE)
+	tar xf $<
+	cd tiff-*
+	$(CONFIGURE) \
+		--disable-jpeg \
+		--disable-old-jpeg \
+		--disable-lzma \
+		--disable-jpeg12 \
+		--without-x
+	make
+	make clean
+	make install
+
+## libopenjp2
+
+OPENJP2_SOURCE=openjp2-$(OPENJP2_VERSION).tar.gz
+
+$(OPENJP2_SOURCE):
+	curl -L https://github.com/uclouvain/openjpeg/archive/v$(OPENJP2_VERSION).tar.gz -o $(OPENJP2_SOURCE)
+
+LIBOPENJP2=$(CACHE_DIR)/lib/libopenjp2.a
+
+$(LIBOPENJP2): $(OPENJP2_SOURCE) $(LIBPNG) $(LIBTIFF)
+	tar xf $<
+	cd openjpeg-*
+	mkdir -p build
+	cd build 
+	$(PKG_CONFIG) $(CMAKE) .. \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=$(CACHE_DIR) \
+		-DBUILD_SHARED_LIBS:bool=off \
+		-DBUILD_CODEC:bool=off
+	make clean
+	make install
+
 ## pixman
 
 PIXMAN_SOURCE=pixman-$(PIXMAN_VERSION).tar.gz
+LIBPIXMAN=$(CACHE_DIR)/lib/libpixman-1.a
 
 $(PIXMAN_SOURCE): 
 	curl -LO https://www.cairographics.org/releases/$(PIXMAN_SOURCE)
 
-pixman $(CACHE_DIR)/lib/libpixman-1.a: $(PIXMAN_SOURCE) $(CACHE_DIR)/lib/libpng.a
+$(LIBPIXMAN): $(PIXMAN_SOURCE) $(LIBPNG)
 	tar xf $<
 	cd pixman*
 	$(CONFIGURE) \
 		--disable-gtk
 	make
-	make clean
 	make install
 
 ## freetype
 
 FREETYPE_SOURCE=freetype-$(FREETYPE_VERSION).tar.gz
-
+LIBFREETYPE=$(CACHE_DIR)/lib/libfreetype.a
 $(FREETYPE_SOURCE): 
 	curl -LO https://download.savannah.gnu.org/releases/freetype/$(FREETYPE_SOURCE)
 
-freetype $(CACHE_DIR)/lib/libfreetype.a: $(FREETYPE_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libbz2.a
+$(LIBFREETYPE): $(FREETYPE_SOURCE) $(LIBPNG) $(LIBBZ2)
 	tar xf $<
 	cd freetype*
 	$(CONFIGURE)
@@ -177,11 +267,12 @@ freetype $(CACHE_DIR)/lib/libfreetype.a: $(FREETYPE_SOURCE) $(CACHE_DIR)/lib/lib
 ## fontconfig
 
 FONTCONFIG_SOURCE=fontconfig-$(FONTCONFIG_VERSION).tar.bz2
+LIBFONTCONFIG=$(CACHE_DIR)/lib/libfontconfig.a
 
 $(FONTCONFIG_SOURCE): 
 	curl -LO https://www.freedesktop.org/software/fontconfig/release/$(FONTCONFIG_SOURCE)
 
-$(CACHE_DIR)/lib/libfontconfig.a fontconfig: $(FONTCONFIG_SOURCE) $(CACHE_DIR)/lib/libxml2.a $(CACHE_DIR)/lib/libfreetype.a $(CACHE_DIR)/lib/libuuid.a
+$(LIBFONTCONFIG): $(FONTCONFIG_SOURCE) $(LIBXML2) $(LIBFREETYPE) $(LIBUUID)
 	tar xf $<
 	cd fontconfig*
 	$(CONFIGURE) \
@@ -189,41 +280,17 @@ $(CACHE_DIR)/lib/libfontconfig.a fontconfig: $(FONTCONFIG_SOURCE) $(CACHE_DIR)/l
 		--disable-docs \
 		--localstatedir=/tmp \
 		--with-default-fonts=/opt/fonts
-	LD_RUN_PATH=$(CACHE_DIR)/lib:$(CACHE_DIR)/lib64:$$LD_RUN_PATH make clean all install
-
-	
-## poppler
-
-POPPLER_SOURCE=poppler-$(POPPLER_VERSION).tar.xz
-
-$(POPPLER_SOURCE): 
-	curl -LO https://poppler.freedesktop.org/$(POPPLER_SOURCE)
-
-poppler: $(POPPLER_SOURCE) $(CACHE_DIR)/lib/libfontconfig.a $(CACHE_DIR)/lib/libcairo.a $(CACHE_DIR)/lib/libopenjp2.a
-	tar xf $<
-	cd poppler*
-	mkdir -p build
-	cd build
-	$(PKG_CONFIG) $(CMAKE) .. \
-		-DCMAKE_BUILD_TYPE=release \
-		-DCMAKE_INSTALL_PREFIX=$(CACHE_DIR) \
-		-DBUILD_SHARED_LIBS:bool=off \
-		-DENABLE_UTILS:bool=off \
-		-DENABLE_LIBCURL:bool=off \
-		-DENABLE_NSS3:bool=off
-	LD_LIBRARY_PATH=$(CACHE_DIR)/lib LD_RUN_PATH=$(CACHE_DIR)/lib make
+	make 
 	make install
-	#make install
-
-
+	
 ## cairo
 
 CAIRO_SOURCE=cairo-$(CAIRO_VERSION).tar.xz
-
+LIBCAIRO=$(CACHE_DIR)/lib/libcairo.a
 $(CAIRO_SOURCE):
 	curl -OL https://www.cairographics.org/releases/$(CAIRO_SOURCE)
 
-cairo $(CACHE_DIR)/lib/libcairo.a: $(CAIRO_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libxml2.a $(CACHE_DIR)/lib/libfontconfig.a
+$(LIBCAIRO): $(CAIRO_SOURCE) $(LIBPNG) $(LIBXML2) $(LIBFONTCONFIG)
 	tar xf $<
 	cd cairo*
 	$(CONFIGURE) \
@@ -263,12 +330,12 @@ cairo $(CACHE_DIR)/lib/libcairo.a: $(CAIRO_SOURCE) $(CACHE_DIR)/lib/libpng.a $(C
 PANGO_SOURCE=pango-$(PANGO_VERSION).tar.bz2
 PANGO_MINOR_VERSION=$(basename $(PANGO_VERSION))
 PANGO_MAJOR_VERSION=$(basename $(PANGO_MINOR_VERSION))
+LIBPANGO=$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a
 
 $(PANGO_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/pango/$(PANGO_MINOR_VERSION)/$(PANGO_SOURCE)
 
-
-pango $(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a: $(PANGO_SOURCE) $(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a $(CACHE_DIR)/lib/libcairo.a
+$(LIBPANGO): $(PANGO_SOURCE) $(LIBCROCO) $(LIBCAIRO)
 	tar xf $<
 	cd pango*
 	$(CONFIGURE) \
@@ -278,7 +345,6 @@ pango $(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a: $(PANGO_SOURCE) $(CA
 		--disable-gtk-doc-html \
 		--disable-doc-cross-references \
 		--without-x
-
 	make
 	make install
 
@@ -289,10 +355,13 @@ GDK_PIXBUF_SOURCE=gdk-pixbuf-$(GDK_PIXBUF_VERSION).tar.xz
 GDK_PIXBUF_MINOR_VERSION=$(basename $(GDK_PIXBUF_VERSION))
 GDK_PIXBUF_MAJOR_VERSION=$(basename $(GDK_PIXBUF_MINOR_VERSION))
 
+LIBGDK_PIXBUF=$(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a
+
 $(GDK_PIXBUF_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/$(GDK_PIXBUF_MINOR_VERSION)/$(GDK_PIXBUF_SOURCE) 
 
-gdk-pixbuf $(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a: $(GDK_PIXBUF_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libjpeg.a $(CACHE_DIR)/lib/libtiff.a $(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a
+
+$(LIBGDK_PIXBUF): $(GDK_PIXBUF_SOURCE) $(LIBPNG) $(LIBOPENJP2) $(LIBJPEG) $(LIBTIFF) $(GLIB)
 	tar xf $<
 	cd gdk-pixbuf*
 	$(CONFIGURE) \
@@ -310,114 +379,9 @@ gdk-pixbuf $(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a: $(GDK
 	make install
 
 
-## libjpg
-
-LIBJPG_SOURCE=jpegsrc.v$(LIBJPG_VERSION).tar.gz
-
-$(LIBJPG_SOURCE):
-	curl -LO http://ijg.org/files/$(LIBJPG_SOURCE)
-
-$(CACHE_DIR)/lib/libjpeg.a: $(LIBJPG_SOURCE)
-	tar xf $<
-	cd jpeg*
-	$(CONFIGURE)	 
-	make
-	make install
-
-
-## libpng
-
-LIBPNG_SOURCE=libpng-$(LIBPNG_VERSION).tar.xz
-
-$(LIBPNG_SOURCE):
-	curl -LO http://prdownloads.sourceforge.net/libpng/$(LIBPNG_SOURCE)
-
-$(CACHE_DIR)/lib/libpng.a: $(LIBPNG_SOURCE)
-	tar xf $<
-	cd libpng*
-	$(CONFIGURE)	 
-	make
-	make install
-
-# libbz2
-
-BZIP2_SOURCE=bzip2-$(BZIP2_VERSION).tar.gz
-
-$(BZIP2_SOURCE):
-	curl -LO http://prdownloads.sourceforge.net/bzip2/bzip2-$(BZIP2_VERSION).tar.gz
-
-$(CACHE_DIR)/lib/libbz2.a: $(BZIP2_SOURCE)
-	tar xf $<
-	cd bzip2-*
-	make libbz2.a
-	make install PREFIX=$(CACHE_DIR)
-
-# libtiff
-
-LIBTIFF_SOURCE=tiff-$(LIBTIFF_VERSION).tar.gz
-
-$(LIBTIFF_SOURCE):
-	curl -LO http://download.osgeo.org/libtiff/$(LIBTIFF_SOURCE)
-
-$(CACHE_DIR)/lib/libtiff.a: $(LIBTIFF_SOURCE)
-	tar xf $<
-	cd tiff-*
-	$(CONFIGURE) \
-		--disable-jpeg \
-		--disable-old-jpeg \
-		--disable-lzma \
-		--disable-jpeg12 \
-		--without-x
-	make
-	make clean
-	make install
-
-# libwebp
-
-LIBWEBP_SOURCE=libwebp-$(LIBWEBP_VERSION).tar.gz
-
-$(LIBWEBP_SOURCE):
-	curl -L https://github.com/webmproject/libwebp/archive/v$(LIBWEBP_VERSION).tar.gz -o $(LIBWEBP_SOURCE)
-	
-$(CACHE_DIR)/lib/libwebp.a: $(LIBWEBP_SOURCE)
-	tar xf $<
-	cd libwebp-*
-	sh autogen.sh
-	$(CONFIGURE)	 
-	make
-	make install
-
-## libopenjp2
-
-OPENJP2_SOURCE=openjp2-$(OPENJP2_VERSION).tar.gz
-
-$(OPENJP2_SOURCE):
-	curl -L https://github.com/uclouvain/openjpeg/archive/v$(OPENJP2_VERSION).tar.gz -o $(OPENJP2_SOURCE)
-
-
-$(CACHE_DIR)/lib/libopenjp2.a: $(OPENJP2_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libtiff.a
-	tar xf $<
-	cd openjpeg-*
-	mkdir -p build
-	cd build 
-	$(PKG_CONFIG) $(CMAKE) .. \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DCMAKE_INSTALL_PREFIX=$(CACHE_DIR) \
-		-DBUILD_SHARED_LIBS:bool=off \
-		-DBUILD_CODEC:bool=off
-	make clean
-	make install
-
-
 ## RSVG
 
-LIBS:=$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a \
-	$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a \
-	$(CACHE_DIR)/lib/libcairo.a \
-	$(CACHE_DIR)/lib/libjpeg.a \
-	$(CACHE_DIR)/lib/libpng.a \
-	$(CACHE_DIR)/lib/libtiff.a \
-	$(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a
+LIBS:=$(LIBCROCO) $(LIBPANGO) $(LIBCAIRO) $(LIBGDK_PIXBUF)
 
 LIBRSVG_SOURCE=librsvg-$(LIBRSVG_VERSION).tar.gz
 LIBRSVG_MINOR_VERSION=$(basename $(LIBRSVG_VERSION))
