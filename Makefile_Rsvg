@@ -143,7 +143,6 @@ $(LIBCROCO): $(LIBCROCO_SOURCE) $(LIBXML2) $(GLIB)
 		--disable-gtk-doc \
 		--disable-gtk-doc-html
 	make
-	make clean
 	make install
 
 ## libjpg
@@ -209,7 +208,6 @@ $(LIBTIFF): $(LIBTIFF_SOURCE)
 		--disable-jpeg12 \
 		--without-x
 	make
-	make clean
 	make install
 
 ## libopenjp2
@@ -231,7 +229,7 @@ $(LIBOPENJP2): $(OPENJP2_SOURCE) $(LIBPNG) $(LIBTIFF)
 		-DCMAKE_INSTALL_PREFIX=$(CACHE_DIR) \
 		-DBUILD_SHARED_LIBS:bool=off \
 		-DBUILD_CODEC:bool=off
-	make clean
+	make
 	make install
 
 ## pixman
@@ -286,11 +284,13 @@ $(LIBFONTCONFIG): $(FONTCONFIG_SOURCE) $(LIBXML2) $(LIBFREETYPE) $(LIBUUID)
 ## cairo
 
 CAIRO_SOURCE=cairo-$(CAIRO_VERSION).tar.xz
-LIBCAIRO=$(CACHE_DIR)/lib/libcairo.a
+
+LIBCAIRO:=$(CACHE_DIR)/lib/libcairo.a
+
 $(CAIRO_SOURCE):
 	curl -OL https://www.cairographics.org/releases/$(CAIRO_SOURCE)
 
-$(LIBCAIRO): $(CAIRO_SOURCE) $(LIBPNG) $(LIBXML2) $(LIBFONTCONFIG)
+cairo $(LIBCAIRO): $(CAIRO_SOURCE) $(LIBPNG) $(LIBXML2) $(LIBFONTCONFIG) $(LIBPIXMAN)
 	tar xf $<
 	cd cairo*
 	$(CONFIGURE) \
@@ -322,7 +322,6 @@ $(LIBCAIRO): $(CAIRO_SOURCE) $(LIBPNG) $(LIBXML2) $(LIBFONTCONFIG)
 		--enable-xml \
 		--disable-trace
 	make
-	make clean
 	make install
 
 ## pango
@@ -330,7 +329,7 @@ $(LIBCAIRO): $(CAIRO_SOURCE) $(LIBPNG) $(LIBXML2) $(LIBFONTCONFIG)
 PANGO_SOURCE=pango-$(PANGO_VERSION).tar.bz2
 PANGO_MINOR_VERSION=$(basename $(PANGO_VERSION))
 PANGO_MAJOR_VERSION=$(basename $(PANGO_MINOR_VERSION))
-LIBPANGO=$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a
+LIBPANGO:=$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a
 
 $(PANGO_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/pango/$(PANGO_MINOR_VERSION)/$(PANGO_SOURCE)
@@ -405,7 +404,6 @@ rsvg $(TARGET_DIR)bin/rsvg-convert: $(LIBRSVG_SOURCE) $(LIBS)
 		--without-x \
 		--disable-gtk-doc \
 		--prefix=$(TARGET_DIR)
-	make clean
 	make all
 	make install
 
