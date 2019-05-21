@@ -1,24 +1,33 @@
 LIBPNG_VERSION ?= 1.6.37
+UTIL_LINUX_VERSION=2.33
 LIBJPG_VERSION ?= 9c
 OPENJP2_VERSION ?= 2.3.1
 LIBTIFF_VERSION ?= 4.0.9
-
+LIBXML2_VERSION ?= 2.9.9
+GLIB_VERSION ?= 2.58.3
 CAIRO_VERSION=1.14.8
 LIBCROCO_VERSION=0.6.8
 PANGO_VERSION=1.28.4
 GDK_PIXBUF_VERSION=2.28.2
+LIBFFI_VERSION=3.2.1
 LIBRSVG_VERSION=2.26.3
+PIXMAN_VERSION=0.38.4
+POPPLER_VERSION=0.67.0
+FONTCONFIG_VERSION=2.13.0
+FREETYPE_VERSION=2.10.0
+
+BZIP2_VERSION ?= 1.0.6
 
 TARGET_DIR ?= /opt/
 PROJECT_ROOT = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 CACHE_DIR=$(PROJECT_ROOT)build/cache
 
+CMAKE=cmake3
+
 #??? linux-vdso.so.1 (0x00007ffe885ab000)
 #  libgthread-2.0.so.0 => /lib64/libgthread-2.0.so.0 (0x00007f990aff3000)
-#  libxml2.so.2 => /lib64/libxml2.so.2 (0x00007f990ac8c000)
 #  libgmodule-2.0.so.0 => /lib64/libgmodule-2.0.so.0 (0x00007f990aa88000)
 #  libpixman-1.so.0 => /lib64/libpixman-1.so.0 (0x00007f990a5c4000)
-#  libpng15.so.15 => /lib64/libpng15.so.15 (0x00007f990a399000)
 #  libfontconfig.so.1 => /lib64/libfontconfig.so.1 (0x00007f9909d3e000)
 #  libfreetype.so.6 => /lib64/libfreetype.so.6 (0x00007f9909a9a000)
 #  libgio-2.0.so.0 => /lib64/libgio-2.0.so.0 (0x00007f9909701000)
@@ -28,28 +37,94 @@ CACHE_DIR=$(PROJECT_ROOT)build/cache
 #  libexpat.so.1 => /lib64/libexpat.so.1 (0x00007f99081da000)
 #  libmount.so.1 => /lib64/libmount.so.1 (0x00007f990793f000)
 #  libblkid.so.1 => /lib64/libblkid.so.1 (0x00007f99074de000)
-#libuuid.so.1 => /lib64/libuuid.so.1 (0x00007f99072d9000)
+#  libuuid.so.1 => /lib64/libuuid.so.1 (0x00007f99072d9000)
 
 .ONESHELL:
 
-CONFIGURE = PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig \
-	./configure \
+PKG_CONFIG=PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig
+CONFIGURE = $(PKG_CONFIG) ./configure \
 		CPPFLAGS=-I$(CACHE_DIR)/include \
-		LDFLAGS=-L$(CACHE_DIR)/lib \
+		LDFLAGS="-L$(CACHE_DIR)/lib -L$(CACHE_DIR)/lib64" \
 		--disable-dependency-tracking \
 		--disable-shared \
 		--enable-static \
+		--disable-rpath \
 		--prefix=$(CACHE_DIR)
 
 ##
 system-init:
-	#yum-config-manager --enable epel
-	yum install -y gcc gcc-c++ glib2-devel libxml2-devel libpng-devel \
-		libtiff-devel libjpeg-devel freetype-devel poppler-devel intltool \
-		flex bison shared-mime-info gobject-introspection gobject-introspection-devel \
-		giflib-devel libjpeg-turbo-devel poppler-glib-devel pango-devel \
-		cairo cairo-devel cairo-gobject-devel harfbuzz-devel
+	yum install -y gcc gcc-c++ cmake3 intltool flex bison shared-mime-info gperf
 
+## util-linux has libmount and libuuid etc
+
+UTIL_LINUX_SOURCE=util-linux-$(UTIL_LINUX_VERSION).tar.xz
+
+$(UTIL_LINUX_SOURCE):
+	curl -LO https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v$(UTIL_LINUX_VERSION)/$(UTIL_LINUX_SOURCE)
+
+$(CACHE_DIR)/lib/libuuid.a: $(UTIL_LINUX_SOURCE)
+	tar xf $<
+	cd util-linux*
+	$(CONFIGURE) \
+		--disable-all-programs \
+		--enable-libuuid
+	make
+	make install
+
+## libffi
+
+LIBFFI_SOURCE=libffi-$(LIBFFI_VERSION).tar.gz
+$(LIBFFI_SOURCE): 
+	curl -LO ftp://sourceware.org/pub/libffi/$(LIBFFI_SOURCE)
+
+$(CACHE_DIR)/lib64/libffi.a libffi: $(LIBFFI_SOURCE)
+	tar xf $<
+	cd libffi*
+	$(CONFIGURE)
+	make
+	make install
+
+## GLIB,
+# see https://developer.gnome.org/glib/stable/glib-building.html
+#
+GLIB_SOURCE=glib-$(GLIB_VERSION).tar.xz
+GLIB_MINOR_VERSION=$(basename $(GLIB_VERSION))
+GLIB_MAJOR_VERSION=$(basename $(GLIB_MINOR_VERSION))
+
+$(GLIB_SOURCE):
+	curl -LO http://ftp.gnome.org/pub/gnome/sources/glib/$(GLIB_MINOR_VERSION)/$(GLIB_SOURCE)
+
+glib $(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a: $(GLIB_SOURCE) $(CACHE_DIR)/lib64/libffi.a
+	tar xf $<
+	cd glib*
+	$(PKG_CONFIG) ./autogen.sh 
+	$(CONFIGURE) \
+		--disable-gtk-doc \
+		--disable-man \
+		--disable-libmount \
+		--disable-fam \
+		--disable-libelf \
+		--disable-xattr \
+		--disable-installed-tests \
+		--with-pcre=internal
+	make
+	make install
+
+## libxml2
+
+LIBXML2_SOURCE=libxml2-$(LIBXML2_VERSION).tar.gz
+
+$(LIBXML2_SOURCE):
+	curl -LO ftp://xmlsoft.org/libxml2/$(LIBXML2_SOURCE)
+
+$(CACHE_DIR)/lib/libxml2.a: $(LIBXML2_SOURCE)
+	tar xf $<
+	cd libxml2*
+	$(CONFIGURE) \
+		--without-history \
+		--without-python
+	make
+	make install
 
 ## licroco
 
@@ -59,14 +134,86 @@ LIBCROCO_MINOR_VERSION=$(basename $(LIBCROCO_VERSION))
 $(LIBCROCO_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/libcroco/$(LIBCROCO_MINOR_VERSION)/$(LIBCROCO_SOURCE)
 	
-$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a: $(LIBCROCO_SOURCE)
+$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a: $(LIBCROCO_SOURCE) $(CACHE_DIR)/lib/libxml2.a $(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a
 	tar xf $<
 	cd libcroco*
 	$(CONFIGURE) \
 		--disable-gtk-doc \
 		--disable-gtk-doc-html
 	make
+	make clean
 	make install
+
+## pixman
+
+PIXMAN_SOURCE=pixman-$(PIXMAN_VERSION).tar.gz
+
+$(PIXMAN_SOURCE): 
+	curl -LO https://www.cairographics.org/releases/$(PIXMAN_SOURCE)
+
+pixman $(CACHE_DIR)/lib/libpixman-1.a: $(PIXMAN_SOURCE) $(CACHE_DIR)/lib/libpng.a
+	tar xf $<
+	cd pixman*
+	$(CONFIGURE) \
+		--disable-gtk
+	make
+	make clean
+	make install
+
+## freetype
+
+FREETYPE_SOURCE=freetype-$(FREETYPE_VERSION).tar.gz
+
+$(FREETYPE_SOURCE): 
+	curl -LO https://download.savannah.gnu.org/releases/freetype/$(FREETYPE_SOURCE)
+
+freetype $(CACHE_DIR)/lib/libfreetype.a: $(FREETYPE_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libbz2.a
+	tar xf $<
+	cd freetype*
+	$(CONFIGURE)
+	make 
+	make install
+
+## fontconfig
+
+FONTCONFIG_SOURCE=fontconfig-$(FONTCONFIG_VERSION).tar.bz2
+
+$(FONTCONFIG_SOURCE): 
+	curl -LO https://www.freedesktop.org/software/fontconfig/release/$(FONTCONFIG_SOURCE)
+
+$(CACHE_DIR)/lib/libfontconfig.a fontconfig: $(FONTCONFIG_SOURCE) $(CACHE_DIR)/lib/libxml2.a $(CACHE_DIR)/lib/libfreetype.a $(CACHE_DIR)/lib/libuuid.a
+	tar xf $<
+	cd fontconfig*
+	$(CONFIGURE) \
+		--enable-libxml2 \
+		--disable-docs \
+		--localstatedir=/tmp \
+		--with-default-fonts=/opt/fonts
+	LD_RUN_PATH=$(CACHE_DIR)/lib:$(CACHE_DIR)/lib64:$$LD_RUN_PATH make clean all install
+
+	
+## poppler
+
+POPPLER_SOURCE=poppler-$(POPPLER_VERSION).tar.xz
+
+$(POPPLER_SOURCE): 
+	curl -LO https://poppler.freedesktop.org/$(POPPLER_SOURCE)
+
+poppler: $(POPPLER_SOURCE) $(CACHE_DIR)/lib/libfontconfig.a $(CACHE_DIR)/lib/libcairo.a $(CACHE_DIR)/lib/libopenjp2.a
+	tar xf $<
+	cd poppler*
+	mkdir -p build
+	cd build
+	$(PKG_CONFIG) $(CMAKE) .. \
+		-DCMAKE_BUILD_TYPE=release \
+		-DCMAKE_INSTALL_PREFIX=$(CACHE_DIR) \
+		-DBUILD_SHARED_LIBS:bool=off \
+		-DENABLE_UTILS:bool=off \
+		-DENABLE_LIBCURL:bool=off \
+		-DENABLE_NSS3:bool=off
+	LD_LIBRARY_PATH=$(CACHE_DIR)/lib LD_RUN_PATH=$(CACHE_DIR)/lib make
+	make install
+	#make install
 
 
 ## cairo
@@ -76,7 +223,7 @@ CAIRO_SOURCE=cairo-$(CAIRO_VERSION).tar.xz
 $(CAIRO_SOURCE):
 	curl -OL https://www.cairographics.org/releases/$(CAIRO_SOURCE)
 
-$(CACHE_DIR)/lib/libcairo.a: $(CAIRO_SOURCE)
+cairo $(CACHE_DIR)/lib/libcairo.a: $(CAIRO_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libxml2.a $(CACHE_DIR)/lib/libfontconfig.a
 	tar xf $<
 	cd cairo*
 	$(CONFIGURE) \
@@ -104,8 +251,11 @@ $(CACHE_DIR)/lib/libcairo.a: $(CAIRO_SOURCE)
 		--disable-glx \
 		--disable-egl \
 		--disable-wgl \
-		--disable-test-suite
+		--disable-test-suite \
+		--enable-xml \
+		--disable-trace
 	make
+	make clean
 	make install
 
 ## pango
@@ -118,7 +268,7 @@ $(PANGO_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/pango/$(PANGO_MINOR_VERSION)/$(PANGO_SOURCE)
 
 
-$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a: $(PANGO_SOURCE) $(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a $(CACHE_DIR)/lib/libcairo.a
+pango $(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a: $(PANGO_SOURCE) $(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a $(CACHE_DIR)/lib/libcairo.a
 	tar xf $<
 	cd pango*
 	$(CONFIGURE) \
@@ -142,7 +292,7 @@ GDK_PIXBUF_MAJOR_VERSION=$(basename $(GDK_PIXBUF_MINOR_VERSION))
 $(GDK_PIXBUF_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/$(GDK_PIXBUF_MINOR_VERSION)/$(GDK_PIXBUF_SOURCE) 
 
-$(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a: $(GDK_PIXBUF_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libjpeg.a $(CACHE_DIR)/lib/libtiff.a
+gdk-pixbuf $(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a: $(GDK_PIXBUF_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CACHE_DIR)/lib/libjpeg.a $(CACHE_DIR)/lib/libtiff.a $(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a
 	tar xf $<
 	cd gdk-pixbuf*
 	$(CONFIGURE) \
@@ -250,7 +400,7 @@ $(CACHE_DIR)/lib/libopenjp2.a: $(OPENJP2_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CAC
 	cd openjpeg-*
 	mkdir -p build
 	cd build 
-	PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig cmake .. \
+	$(PKG_CONFIG) $(CMAKE) .. \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=$(CACHE_DIR) \
 		-DBUILD_SHARED_LIBS:bool=off \
@@ -263,6 +413,7 @@ $(CACHE_DIR)/lib/libopenjp2.a: $(OPENJP2_SOURCE) $(CACHE_DIR)/lib/libpng.a $(CAC
 
 LIBS:=$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a \
 	$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a \
+	$(CACHE_DIR)/lib/libcairo.a \
 	$(CACHE_DIR)/lib/libjpeg.a \
 	$(CACHE_DIR)/lib/libpng.a \
 	$(CACHE_DIR)/lib/libtiff.a \
@@ -275,11 +426,10 @@ LIBRSVG_MAJOR_VERSION=$(basename $(LIBRSVG_MINOR_VERSION))
 $(LIBRSVG_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/librsvg/$(LIBRSVG_MINOR_VERSION)/$(LIBRSVG_SOURCE)
 
-$(TARGET_DIR)/bin/rsvg-convert: $(LIBRSVG_SOURCE) $(LIBS)
+rsvg $(TARGET_DIR)bin/rsvg-convert: $(LIBRSVG_SOURCE) $(LIBS)
 	tar xf $<
 	cd librsvg-*
-	PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig \
-		./configure \
+	$(PKG_CONFIG) ./configure \
 		CPPFLAGS=-I$(CACHE_DIR)/include \
 		LDFLAGS=-L$(CACHE_DIR)/lib \
 		--enable-option-checking \
@@ -297,4 +447,4 @@ $(TARGET_DIR)/bin/rsvg-convert: $(LIBRSVG_SOURCE) $(LIBS)
 
 libs: $(LIBS)
 
-all: $(TARGET_DIR)/bin/rsvg-convert
+all: $(TARGET_DIR)bin/rsvg-convert
