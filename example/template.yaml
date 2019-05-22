@@ -35,7 +35,7 @@ Resources:
       Environment:
         Variables:
           OUTPUT_BUCKET: !Ref ResultsBucket
-          FILE_TYPE: !Sub ConversionFileType
+          FILE_TYPE: !Ref ConversionFileType
           MIME_TYPE: !Ref ConversionMimeType
       Events:
         FileUpload:

@@ -23,7 +23,7 @@ exports.handler = function (eventObject, context) {
 	return s3Util.downloadFileFromS3(inputBucket, key, inputFile)
 		.then(() => childProcessPromise.spawn(
 			'/opt/bin/rsvg-convert',
-			[inputFile, '-t', FILE_TYPE, '-o', outputFile],
+			[inputFile, '-f', FILE_TYPE, '-o', outputFile],
 			{env: process.env, cwd: workdir}
 		))
 		.then(() => s3Util.uploadFileToS3(OUTPUT_BUCKET, resultKey, outputFile, MIME_TYPE));

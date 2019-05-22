@@ -24,7 +24,7 @@ STACK_NAME ?= rsvg-layer
 
 result/bin/rsvg: all
 
-build/output.yaml: template.yaml result/bin/rsvg
+build/output.yaml: template.yaml 
 	aws cloudformation package --template $< --s3-bucket $(DEPLOYMENT_BUCKET) --output-template-file $@
 
 deploy: build/output.yaml

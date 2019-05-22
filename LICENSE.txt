@@ -1,0 +1,1 @@
+LibRSVG license, see https://gitlab.gnome.org/GNOME/librsvg/blob/master/COPYING
