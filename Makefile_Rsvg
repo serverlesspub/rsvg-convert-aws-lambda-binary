@@ -15,6 +15,7 @@ PIXMAN_VERSION=0.38.4
 FONTCONFIG_VERSION=2.13.0
 FREETYPE_VERSION=2.10.0
 BZIP2_VERSION ?= 1.0.6
+HARFBUZZ_VERSION ?= 2.4.0
 
 
 # what to tell RSVG where it will expect to run from
@@ -248,18 +249,44 @@ $(LIBPIXMAN): $(PIXMAN_SOURCE) $(LIBPNG)
 	make
 	make install
 
-## freetype
+## freetype and harfbuzz co-depend on each other, so freetype needs to be 
+## built without harfbuzz first, then harfbuzz with freetype, then freetype again
+## see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
 
 FREETYPE_SOURCE=freetype-$(FREETYPE_VERSION).tar.gz
 LIBFREETYPE=$(CACHE_DIR)/lib/libfreetype.a
+HARFBUZZ_SOURCE=harfbuzz-$(HARFBUZZ_VERSION).tar.bz2
+LIBHARFBUZZ=$(CACHE_DIR)/lib/libharfbuzz.a
+
 $(FREETYPE_SOURCE): 
 	curl -LO https://download.savannah.gnu.org/releases/freetype/$(FREETYPE_SOURCE)
 
-$(LIBFREETYPE): $(FREETYPE_SOURCE) $(LIBPNG) $(LIBBZ2)
-	tar xf $<
+$(HARFBUZZ_SOURCE):
+	curl -LO https://www.freedesktop.org/software/harfbuzz/release/$(HARFBUZZ_SOURCE)
+
+$(LIBFREETYPE) $(LIBHARFBUZZ): $(FREETYPE_SOURCE) $(HARFBUZZ_SOURCE) $(GLIB) $(LIBPNG) $(LIBBZ2)
+	tar xf $(FREETYPE_SOURCE)
+	tar xf $(HARFBUZZ_SOURCE)
+
 	cd freetype*
-	$(CONFIGURE)
-	make 
+	$(CONFIGURE) --without-harfbuzz
+	make
+	make install
+
+	cd ../harfbuzz*
+	$(CONFIGURE) \
+		--with-glib \
+		--with-freetype
+	make
+	make install
+	
+	cd ../freetype*
+	$(CONFIGURE) \
+		--with-harfbuzz \
+		--with-png \
+		--with-bzip2
+	make clean
+	make
 	make install
 
 ## fontconfig
