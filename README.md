@@ -8,7 +8,7 @@ Absolutely the easiest way of using this is to pull it directly from the AWS Ser
 
 The `rsvg` binary will be in `/opt/bin/rsvg-convert` after linking the layer to a Lambda function.
 
-For more information, check out the [rsvg-convert-lambda-layer](https://console.aws.amazon.com/lambda/home?region=us-east-1#/create/app?applicationId=arn:aws:serverlessrepo:us-east-1:145266761615:applications/rsvg-convert-lambda-layer) application in the Serverless App Repository.
+For more information, check out the [rsvg-convert-lambda-layer](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:145266761615:applications~rsvg-convert-lambda-layer) application in the Serverless App Repository.
 
 For manual deployments and custom builds, read below...
 
