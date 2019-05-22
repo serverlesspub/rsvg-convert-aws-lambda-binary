@@ -1,21 +1,25 @@
 LIBPNG_VERSION ?= 1.6.37
-UTIL_LINUX_VERSION=2.33
+UTIL_LINUX_VERSION ?= 2.33
 LIBJPEG_VERSION ?= 9c
 OPENJP2_VERSION ?= 2.3.1
 LIBTIFF_VERSION ?= 4.0.9
 LIBXML2_VERSION ?= 2.9.9
 GLIB_VERSION ?= 2.58.3
-CAIRO_VERSION=1.14.8
-LIBCROCO_VERSION=0.6.8
-PANGO_VERSION=1.28.4
-GDK_PIXBUF_VERSION=2.28.2
-LIBFFI_VERSION=3.2.1
-LIBRSVG_VERSION=2.26.3
-PIXMAN_VERSION=0.38.4
-FONTCONFIG_VERSION=2.13.0
-FREETYPE_VERSION=2.10.0
+CAIRO_VERSION ?= 1.14.8
+LIBCROCO_VERSION ?= 0.6.8
+PANGO_VERSION ?= 1.28.4
+GDK_PIXBUF_VERSION ?= 2.28.2
+LIBFFI_VERSION ?= 3.2.1
+LIBRSVG_VERSION ?= 2.26.3
+PIXMAN_VERSION ?= 0.38.4
+FONTCONFIG_VERSION ?= 2.13.0
+FREETYPE_VERSION ?= 2.10.0
 BZIP2_VERSION ?= 1.0.6
 HARFBUZZ_VERSION ?= 2.4.0
+
+#fontconfig-2.10.95-11.amzn2.0.2.x86_64.rpm
+#harfbuzz-1.3.2-1.amzn2.0.2.x86_64.rpm
+#freetype-2.4.11-15.amzn2.0.2.x86_64.rpm
 
 
 # what to tell RSVG where it will expect to run from
@@ -39,9 +43,10 @@ CACHE_DIR=$(PROJECT_ROOT)build/cache
 
 CMAKE=cmake3
 PKG_CONFIG=PKG_CONFIG_PATH=$(CACHE_DIR)/lib/pkgconfig
-CONFIGURE = $(PKG_CONFIG) ./configure \
+CONFIGURE = ./configure \
 		CPPFLAGS=-I$(CACHE_DIR)/include \
 		LDFLAGS="-L$(CACHE_DIR)/lib -L$(CACHE_DIR)/lib64" \
+		$(PKG_CONFIG) \
 		--disable-dependency-tracking \
 		--disable-shared \
 		--enable-static \
@@ -51,7 +56,7 @@ CONFIGURE = $(PKG_CONFIG) ./configure \
 ## dev tool istallation
 
 init:
-	yum install -y gcc gcc-c++ cmake3 intltool flex bison shared-mime-info gperf
+	yum install -y gcc gcc-c++ cmake3 intltool flex bison shared-mime-info gperf 
 
 ## util-linux has libmount and libuuid etc
 
@@ -264,28 +269,34 @@ $(FREETYPE_SOURCE):
 $(HARFBUZZ_SOURCE):
 	curl -LO https://www.freedesktop.org/software/harfbuzz/release/$(HARFBUZZ_SOURCE)
 
-$(LIBFREETYPE) $(LIBHARFBUZZ): $(FREETYPE_SOURCE) $(HARFBUZZ_SOURCE) $(GLIB) $(LIBPNG) $(LIBBZ2)
-	tar xf $(FREETYPE_SOURCE)
-	tar xf $(HARFBUZZ_SOURCE)
+FT_WITHOUT_HB_DIR=$(PROJECT_ROOT)build/freetype-$(FREETYPE_VERSION)-without-harfbuzz
+FT_WITHOUT_HB=$(FT_WITHOUT_HB_DIR)/objs/.libs/libfreetype.a
 
-	cd freetype*
+$(FT_WITHOUT_HB): $(FREETYPE_SOURCE)
+	tar xf $< -C /tmp
+	rm -rf $(FT_WITHOUT_HB_DIR) 
+	mv /tmp/freetype-$(FREETYPE_VERSION) $(FT_WITHOUT_HB_DIR)
+	cd $(FT_WITHOUT_HB_DIR)
 	$(CONFIGURE) --without-harfbuzz
 	make
 	make install
 
-	cd ../harfbuzz*
+$(LIBHARFBUZZ): $(HARFBUZZ_SOURCE) $(FT_WITHOUT_HB)
+	tar xf $<
+	cd harfbuzz-$(HARFBUZZ_VERSION)
 	$(CONFIGURE) \
-		--with-glib \
-		--with-freetype
+		--with-freetype 
 	make
 	make install
-	
-	cd ../freetype*
+
+$(LIBFREETYPE): $(FREETYPE_SOURCE) $(GLIB) $(LIBPNG) $(LIBBZ2) $(LIBHARFBUZZ)
+	tar xf $<
+	cd freetype-$(FREETYPE_VERSION)
 	$(CONFIGURE) \
 		--with-harfbuzz \
 		--with-png \
 		--with-bzip2
-	make clean
+	make distclean clean
 	make
 	make install
 
@@ -297,14 +308,10 @@ LIBFONTCONFIG=$(CACHE_DIR)/lib/libfontconfig.a
 $(FONTCONFIG_SOURCE): 
 	curl -LO https://www.freedesktop.org/software/fontconfig/release/$(FONTCONFIG_SOURCE)
 
-$(LIBFONTCONFIG): $(FONTCONFIG_SOURCE) $(LIBXML2) $(LIBFREETYPE) $(LIBUUID)
+fontconfig $(LIBFONTCONFIG): $(FONTCONFIG_SOURCE) $(LIBXML2) $(LIBFREETYPE) $(LIBUUID)
 	tar xf $<
-	cd fontconfig*
-	$(CONFIGURE) \
-		--enable-libxml2 \
-		--disable-docs \
-		--localstatedir=/tmp \
-		--with-default-fonts=/opt/fonts
+	cd fontconfig-$(FONTCONFIG_VERSION)
+	$(CONFIGURE) --enable-libxml2
 	make 
 	make install
 	
