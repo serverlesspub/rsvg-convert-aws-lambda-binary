@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Example project demonstrating the usage of the RsvgConvert Layer for AWS Linux 2 runtimes.
+
+Parameters:
+  RsvgLayer:
+    Type: String
+  ConversionFileType:
+    Type: String
+    Default: pdf
+  ConversionMimeType:
+    Type: String
+    Default: application/pdf
+Resources:
+  UploadBucket:
+    Type: AWS::S3::Bucket
+
+  ResultsBucket:
+    Type: AWS::S3::Bucket
+
+  ConvertFileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Timeout: 180
+      MemorySize: 1024
+      Runtime: nodejs10.x
+      CodeUri: src
+      Layers:
+        - !Ref RsvgLayer
+      Policies:
+      - S3CrudPolicy:
+          BucketName: !Sub "${AWS::StackName}-*"
+      Environment:
+        Variables:
+          OUTPUT_BUCKET: !Ref ResultsBucket
+          FILE_TYPE: !Sub ConversionFileType
+          MIME_TYPE: !Ref ConversionMimeType
+      Events:
+        FileUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref UploadBucket
+            Events: s3:ObjectCreated:*
+
+Outputs:
+    UploadBucket:
+      Description: "Upload S3 bucket"
+      Value: !Ref UploadBucket
+    ResultsBucket:
+      Description: "Results S3 bucket"
+      Value: !Ref ResultsBucket
+
