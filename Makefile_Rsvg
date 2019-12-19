@@ -423,23 +423,22 @@ LIBRSVG_MAJOR_VERSION=$(basename $(LIBRSVG_MINOR_VERSION))
 $(LIBRSVG_SOURCE):
 	curl -OL http://ftp.gnome.org/pub/GNOME/sources/librsvg/$(LIBRSVG_MINOR_VERSION)/$(LIBRSVG_SOURCE)
 
-rsvg $(TARGET_DIR)bin/rsvg-convert: $(LIBRSVG_SOURCE) $(LIBS)
+$(CACHE_DIR)/bin/rsvg-convert: $(LIBRSVG_SOURCE) $(LIBS)
 	tar xf $<
 	cd librsvg-*
-	$(PKG_CONFIG) ./configure \
-		CPPFLAGS=-I$(CACHE_DIR)/include \
-		LDFLAGS=-L$(CACHE_DIR)/lib \
-		--enable-option-checking \
-		--disable-dependency-tracking \
-		--disable-shared \
-		--enable-static \
+	make clean distclean
+	$(CONFIGURE) \
 		--disable-pixbuf-loader \
 		--disable-gtk-theme \
 		--without-x \
-		--disable-gtk-doc \
-		--prefix=$(TARGET_DIR)
+		--disable-gtk-doc
 	make all
 	make install
+
+$(TARGET_DIR)bin/rsvg-convert: $(CACHE_DIR)/bin/rsvg-convert
+	mkdir -p $(TARGET_DIR)bin
+	cp $< $@
+	strip -s $@
 
 libs: $(LIBS)
 
