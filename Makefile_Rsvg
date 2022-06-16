@@ -64,7 +64,7 @@ LIBUUID=$(CACHE_DIR)/lib/libuuid.a
 
 UTIL_LINUX_SOURCE=util-linux-$(UTIL_LINUX_VERSION).tar.xz
 $(UTIL_LINUX_SOURCE):
-	curl -LO https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v$(UTIL_LINUX_VERSION)/$(UTIL_LINUX_SOURCE)
+	curl -k -LO https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v$(UTIL_LINUX_VERSION)/$(UTIL_LINUX_SOURCE)
 
 $(LIBUUID): $(UTIL_LINUX_SOURCE)
 	tar xf $<
@@ -81,7 +81,7 @@ LIBFFI_SOURCE=libffi-$(LIBFFI_VERSION).tar.gz
 LIBFFI=$(CACHE_DIR)/lib64/libffi.a
 
 $(LIBFFI_SOURCE): 
-	curl -LO ftp://sourceware.org/pub/libffi/$(LIBFFI_SOURCE)
+	curl -k -LO ftp://sourceware.org/pub/libffi/$(LIBFFI_SOURCE)
 
 $(LIBFFI): $(LIBFFI_SOURCE)
 	tar xf $<
@@ -99,7 +99,7 @@ GLIB_MAJOR_VERSION=$(basename $(GLIB_MINOR_VERSION))
 GLIB=$(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a
 
 $(GLIB_SOURCE):
-	curl -LO http://ftp.gnome.org/pub/gnome/sources/glib/$(GLIB_MINOR_VERSION)/$(GLIB_SOURCE)
+	curl -k -LO http://ftp.gnome.org/pub/gnome/sources/glib/$(GLIB_MINOR_VERSION)/$(GLIB_SOURCE)
 
 $(GLIB): $(GLIB_SOURCE) $(LIBFFI)
 	tar xf $<
@@ -122,7 +122,7 @@ $(GLIB): $(GLIB_SOURCE) $(LIBFFI)
 LIBXML2_SOURCE=libxml2-$(LIBXML2_VERSION).tar.gz
 LIBXML2=$(CACHE_DIR)/lib/libxml2.a
 $(LIBXML2_SOURCE):
-	curl -LO ftp://xmlsoft.org/libxml2/$(LIBXML2_SOURCE)
+	curl -k -LO ftp://xmlsoft.org/libxml2/$(LIBXML2_SOURCE)
 
 $(LIBXML2): $(LIBXML2_SOURCE)
 	tar xf $<
@@ -140,7 +140,7 @@ LIBCROCO_MINOR_VERSION=$(basename $(LIBCROCO_VERSION))
 LIBCROCO=$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a
 
 $(LIBCROCO_SOURCE):
-	curl -OL http://ftp.gnome.org/pub/GNOME/sources/libcroco/$(LIBCROCO_MINOR_VERSION)/$(LIBCROCO_SOURCE)
+	curl -k -OL http://ftp.gnome.org/pub/GNOME/sources/libcroco/$(LIBCROCO_MINOR_VERSION)/$(LIBCROCO_SOURCE)
 
 $(LIBCROCO): $(LIBCROCO_SOURCE) $(LIBXML2) $(GLIB)
 	tar xf $<
@@ -158,7 +158,7 @@ LIBJPEG_SOURCE=jpegsrc.v$(LIBJPEG_VERSION).tar.gz
 LIBJPEG=$(CACHE_DIR)/lib/libjpeg.a
 
 $(LIBJPEG_SOURCE):
-	curl -LO http://ijg.org/files/$(LIBJPEG_SOURCE)
+	curl -k -LO http://ijg.org/files/$(LIBJPEG_SOURCE)
 
 $(LIBJPEG): $(LIBJPEG_SOURCE)
 	tar xf $<
@@ -173,7 +173,7 @@ LIBPNG_SOURCE=libpng-$(LIBPNG_VERSION).tar.xz
 LIBPNG=$(CACHE_DIR)/lib/libpng.a
 
 $(LIBPNG_SOURCE):
-	curl -LO http://prdownloads.sourceforge.net/libpng/$(LIBPNG_SOURCE)
+	curl -k -LO http://prdownloads.sourceforge.net/libpng/$(LIBPNG_SOURCE)
 
 $(LIBPNG): $(LIBPNG_SOURCE)
 	tar xf $<
@@ -188,7 +188,7 @@ BZIP2_SOURCE=bzip2-$(BZIP2_VERSION).tar.gz
 LIBBZ2=$(CACHE_DIR)/lib/libbz2.a
 
 $(BZIP2_SOURCE):
-	curl -LO http://prdownloads.sourceforge.net/bzip2/bzip2-$(BZIP2_VERSION).tar.gz
+	curl -k -LO http://prdownloads.sourceforge.net/bzip2/bzip2-$(BZIP2_VERSION).tar.gz
 
 $(LIBBZ2): $(BZIP2_SOURCE)
 	tar xf $<
@@ -202,7 +202,7 @@ LIBTIFF_SOURCE=tiff-$(LIBTIFF_VERSION).tar.gz
 LIBTIFF=$(CACHE_DIR)/lib/libtiff.a
 
 $(LIBTIFF_SOURCE):
-	curl -LO http://download.osgeo.org/libtiff/$(LIBTIFF_SOURCE)
+	curl -k -LO http://download.osgeo.org/libtiff/$(LIBTIFF_SOURCE)
 
 $(LIBTIFF): $(LIBTIFF_SOURCE)
 	tar xf $<
@@ -244,7 +244,7 @@ PIXMAN_SOURCE=pixman-$(PIXMAN_VERSION).tar.gz
 LIBPIXMAN=$(CACHE_DIR)/lib/libpixman-1.a
 
 $(PIXMAN_SOURCE): 
-	curl -LO https://www.cairographics.org/releases/$(PIXMAN_SOURCE)
+	curl -k -LO https://www.cairographics.org/releases/$(PIXMAN_SOURCE)
 
 $(LIBPIXMAN): $(PIXMAN_SOURCE) $(LIBPNG)
 	tar xf $<
@@ -264,10 +264,10 @@ HARFBUZZ_SOURCE=harfbuzz-$(HARFBUZZ_VERSION).tar.bz2
 LIBHARFBUZZ=$(CACHE_DIR)/lib/libharfbuzz.a
 
 $(FREETYPE_SOURCE): 
-	curl -LO https://download.savannah.gnu.org/releases/freetype/$(FREETYPE_SOURCE)
+	curl -k -LO https://download.savannah.gnu.org/releases/freetype/$(FREETYPE_SOURCE)
 
 $(HARFBUZZ_SOURCE):
-	curl -LO https://www.freedesktop.org/software/harfbuzz/release/$(HARFBUZZ_SOURCE)
+	curl -k -LO https://www.freedesktop.org/software/harfbuzz/release/$(HARFBUZZ_SOURCE)
 
 FT_WITHOUT_HB_DIR=$(PROJECT_ROOT)build/freetype-$(FREETYPE_VERSION)-without-harfbuzz
 FT_WITHOUT_HB=$(FT_WITHOUT_HB_DIR)/objs/.libs/libfreetype.a
@@ -306,7 +306,7 @@ FONTCONFIG_SOURCE=fontconfig-$(FONTCONFIG_VERSION).tar.bz2
 LIBFONTCONFIG=$(CACHE_DIR)/lib/libfontconfig.a
 
 $(FONTCONFIG_SOURCE): 
-	curl -LO https://www.freedesktop.org/software/fontconfig/release/$(FONTCONFIG_SOURCE)
+	curl -k -LO https://www.freedesktop.org/software/fontconfig/release/$(FONTCONFIG_SOURCE)
 
 fontconfig $(LIBFONTCONFIG): $(FONTCONFIG_SOURCE) $(LIBXML2) $(LIBFREETYPE) $(LIBUUID)
 	tar xf $<
@@ -322,7 +322,7 @@ CAIRO_SOURCE=cairo-$(CAIRO_VERSION).tar.xz
 LIBCAIRO:=$(CACHE_DIR)/lib/libcairo.a
 
 $(CAIRO_SOURCE):
-	curl -OL https://www.cairographics.org/releases/$(CAIRO_SOURCE)
+	curl -k -OL https://www.cairographics.org/releases/$(CAIRO_SOURCE)
 
 cairo $(LIBCAIRO): $(CAIRO_SOURCE) $(LIBPNG) $(LIBXML2) $(LIBFONTCONFIG) $(LIBPIXMAN)
 	tar xf $<
@@ -366,7 +366,7 @@ PANGO_MAJOR_VERSION=$(basename $(PANGO_MINOR_VERSION))
 LIBPANGO:=$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a
 
 $(PANGO_SOURCE):
-	curl -OL http://ftp.gnome.org/pub/GNOME/sources/pango/$(PANGO_MINOR_VERSION)/$(PANGO_SOURCE)
+	curl -k -OL http://ftp.gnome.org/pub/GNOME/sources/pango/$(PANGO_MINOR_VERSION)/$(PANGO_SOURCE)
 
 $(LIBPANGO): $(PANGO_SOURCE) $(LIBCROCO) $(LIBCAIRO)
 	tar xf $<
@@ -391,7 +391,7 @@ GDK_PIXBUF_MAJOR_VERSION=$(basename $(GDK_PIXBUF_MINOR_VERSION))
 LIBGDK_PIXBUF=$(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a
 
 $(GDK_PIXBUF_SOURCE):
-	curl -OL http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/$(GDK_PIXBUF_MINOR_VERSION)/$(GDK_PIXBUF_SOURCE) 
+	curl -k -OL http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/$(GDK_PIXBUF_MINOR_VERSION)/$(GDK_PIXBUF_SOURCE) 
 
 
 $(LIBGDK_PIXBUF): $(GDK_PIXBUF_SOURCE) $(LIBPNG) $(LIBOPENJP2) $(LIBJPEG) $(LIBTIFF) $(GLIB)
@@ -421,7 +421,7 @@ LIBRSVG_MINOR_VERSION=$(basename $(LIBRSVG_VERSION))
 LIBRSVG_MAJOR_VERSION=$(basename $(LIBRSVG_MINOR_VERSION))
 
 $(LIBRSVG_SOURCE):
-	curl -OL http://ftp.gnome.org/pub/GNOME/sources/librsvg/$(LIBRSVG_MINOR_VERSION)/$(LIBRSVG_SOURCE)
+	curl -k -OL http://ftp.gnome.org/pub/GNOME/sources/librsvg/$(LIBRSVG_MINOR_VERSION)/$(LIBRSVG_SOURCE)
 
 $(CACHE_DIR)/bin/rsvg-convert: $(LIBRSVG_SOURCE) $(LIBS)
 	tar xf $<
