@@ -53,10 +53,11 @@ CONFIGURE = ./configure \
 		--disable-rpath \
 		--prefix=$(CACHE_DIR)
 
-## dev tool istallation
+## dev tool istallation, update for expired certs
 
 init:
 	yum install -y gcc gcc-c++ cmake3 intltool flex bison shared-mime-info gperf 
+	yum update -y 
 
 ## util-linux has libmount and libuuid etc
 
@@ -99,7 +100,7 @@ GLIB_MAJOR_VERSION=$(basename $(GLIB_MINOR_VERSION))
 GLIB=$(CACHE_DIR)/lib/libglib-$(GLIB_MAJOR_VERSION).0.a
 
 $(GLIB_SOURCE):
-	curl -LO http://ftp.gnome.org/pub/gnome/sources/glib/$(GLIB_MINOR_VERSION)/$(GLIB_SOURCE)
+	curl -LO https://download.gnome.org/sources/glib/$(GLIB_MINOR_VERSION)/$(GLIB_SOURCE)
 
 $(GLIB): $(GLIB_SOURCE) $(LIBFFI)
 	tar xf $<
@@ -140,7 +141,7 @@ LIBCROCO_MINOR_VERSION=$(basename $(LIBCROCO_VERSION))
 LIBCROCO=$(CACHE_DIR)/lib/libcroco-$(LIBCROCO_MINOR_VERSION).a
 
 $(LIBCROCO_SOURCE):
-	curl -OL http://ftp.gnome.org/pub/GNOME/sources/libcroco/$(LIBCROCO_MINOR_VERSION)/$(LIBCROCO_SOURCE)
+	curl -OL https://download.gnome.org/sources/libcroco/$(LIBCROCO_MINOR_VERSION)/$(LIBCROCO_SOURCE)
 
 $(LIBCROCO): $(LIBCROCO_SOURCE) $(LIBXML2) $(GLIB)
 	tar xf $<
@@ -158,7 +159,7 @@ LIBJPEG_SOURCE=jpegsrc.v$(LIBJPEG_VERSION).tar.gz
 LIBJPEG=$(CACHE_DIR)/lib/libjpeg.a
 
 $(LIBJPEG_SOURCE):
-	curl -LO http://ijg.org/files/$(LIBJPEG_SOURCE)
+	curl -LO https://ijg.org/files/$(LIBJPEG_SOURCE)
 
 $(LIBJPEG): $(LIBJPEG_SOURCE)
 	tar xf $<
@@ -173,7 +174,7 @@ LIBPNG_SOURCE=libpng-$(LIBPNG_VERSION).tar.xz
 LIBPNG=$(CACHE_DIR)/lib/libpng.a
 
 $(LIBPNG_SOURCE):
-	curl -LO http://prdownloads.sourceforge.net/libpng/$(LIBPNG_SOURCE)
+	curl -LO https://prdownloads.sourceforge.net/libpng/$(LIBPNG_SOURCE)
 
 $(LIBPNG): $(LIBPNG_SOURCE)
 	tar xf $<
@@ -188,7 +189,7 @@ BZIP2_SOURCE=bzip2-$(BZIP2_VERSION).tar.gz
 LIBBZ2=$(CACHE_DIR)/lib/libbz2.a
 
 $(BZIP2_SOURCE):
-	curl -LO http://prdownloads.sourceforge.net/bzip2/bzip2-$(BZIP2_VERSION).tar.gz
+	curl -LO https://prdownloads.sourceforge.net/bzip2/bzip2-$(BZIP2_VERSION).tar.gz
 
 $(LIBBZ2): $(BZIP2_SOURCE)
 	tar xf $<
@@ -202,7 +203,7 @@ LIBTIFF_SOURCE=tiff-$(LIBTIFF_VERSION).tar.gz
 LIBTIFF=$(CACHE_DIR)/lib/libtiff.a
 
 $(LIBTIFF_SOURCE):
-	curl -LO http://download.osgeo.org/libtiff/$(LIBTIFF_SOURCE)
+	curl -LO https://download.osgeo.org/libtiff/$(LIBTIFF_SOURCE)
 
 $(LIBTIFF): $(LIBTIFF_SOURCE)
 	tar xf $<
@@ -366,7 +367,7 @@ PANGO_MAJOR_VERSION=$(basename $(PANGO_MINOR_VERSION))
 LIBPANGO:=$(CACHE_DIR)/lib/libpango-$(PANGO_MAJOR_VERSION).0.a
 
 $(PANGO_SOURCE):
-	curl -OL http://ftp.gnome.org/pub/GNOME/sources/pango/$(PANGO_MINOR_VERSION)/$(PANGO_SOURCE)
+	curl -OL https://download.gnome.org/sources/pango/$(PANGO_MINOR_VERSION)/$(PANGO_SOURCE)
 
 $(LIBPANGO): $(PANGO_SOURCE) $(LIBCROCO) $(LIBCAIRO)
 	tar xf $<
@@ -391,7 +392,7 @@ GDK_PIXBUF_MAJOR_VERSION=$(basename $(GDK_PIXBUF_MINOR_VERSION))
 LIBGDK_PIXBUF=$(CACHE_DIR)/lib/libgdk_pixbuf-$(GDK_PIXBUF_MAJOR_VERSION).0.a
 
 $(GDK_PIXBUF_SOURCE):
-	curl -OL http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/$(GDK_PIXBUF_MINOR_VERSION)/$(GDK_PIXBUF_SOURCE) 
+	curl -OL https://download.gnome.org/sources/gdk-pixbuf/$(GDK_PIXBUF_MINOR_VERSION)/$(GDK_PIXBUF_SOURCE) 
 
 
 $(LIBGDK_PIXBUF): $(GDK_PIXBUF_SOURCE) $(LIBPNG) $(LIBOPENJP2) $(LIBJPEG) $(LIBTIFF) $(GLIB)
@@ -421,7 +422,7 @@ LIBRSVG_MINOR_VERSION=$(basename $(LIBRSVG_VERSION))
 LIBRSVG_MAJOR_VERSION=$(basename $(LIBRSVG_MINOR_VERSION))
 
 $(LIBRSVG_SOURCE):
-	curl -OL http://ftp.gnome.org/pub/GNOME/sources/librsvg/$(LIBRSVG_MINOR_VERSION)/$(LIBRSVG_SOURCE)
+	curl -OL https://download.gnome.org/sources/librsvg/$(LIBRSVG_MINOR_VERSION)/$(LIBRSVG_SOURCE)
 
 $(CACHE_DIR)/bin/rsvg-convert: $(LIBRSVG_SOURCE) $(LIBS)
 	tar xf $<
